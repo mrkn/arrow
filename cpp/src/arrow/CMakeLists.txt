@@ -403,6 +403,10 @@ if(ARROW_DATASET)
   add_subdirectory(dataset)
 endif()
 
+if(ARROW_DATA_FRAME)
+  add_subdirectory(data_frame)
+endif()
+
 if(ARROW_FLIGHT)
   add_subdirectory(flight)
 endif()

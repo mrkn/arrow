@@ -84,4 +84,4 @@ function(ADD_ARROW_DATA_FRAME_TEST REL_TEST_NAME)
   endif()
 endfunction()
 
-add_arrow_data_frame_test(dataset_test)
+add_arrow_data_frame_test(data_frame_test)

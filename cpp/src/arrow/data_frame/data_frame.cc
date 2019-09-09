@@ -19,5 +19,13 @@
 
 namespace arrow {
 namespace data_frame {
+
+class SimpleDataFrame : public DataFrame {
+ public:
+
+ private:
+  std::vector<ChunkedArray> columns_;
+};
+
 }
 }
