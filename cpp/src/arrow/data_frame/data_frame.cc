@@ -22,10 +22,36 @@ namespace data_frame {
 
 class SimpleDataFrame : public DataFrame {
  public:
+  SimpleDataFrame(const std::shared_ptr<Schema>& schema,
+                  const std::vector<std::shared_ptr<Column>>& columns,
+                  int64_t num_rows = -1)
+    : columns_(columns)
+  {
+    schema_ = schema;
+    if (num_rows < 0) {
+      if (columns.size() == 0) {
+        num_rows_ = 0;
+      } else {
+        num_rows_ = columns[0]->length();
+      }
+    } else {
+      num_rows_ = num_rows;
+    }
+  }
 
  private:
-  std::vector<ChunkedArray> columns_;
+  std::vector<std::shared_ptr<Column>> columns_;
+
+  std::vector<std::shared_ptr<>> MakeColumns
 };
+
+std::shared_ptr<DataFrame> DataFrame::Make(
+    const std::shared_ptr<Schema>& schema,
+    const std::vector<std::shared_ptr<ChunkedArray>>& chunked_arrays,
+    int64_t num_rows = -1) {
+  std::vector<std::shared_ptr<Column>> columns;
+  return std::make_shared<SimpleDataFrame>(schema, columns, num_rows);
+}
 
 }
 }

@@ -29,35 +29,120 @@
 namespace arrow {
 namespace data_frame {
 
+/// \class Column
+class ARROW_DF_EXPORT Column {
+ public:
+  explicit Column(const ArrayVector& chunks);
+
+  /// \brief Return the column field
+  std::shared_ptr<Field> field() const { return field_; }
+
+  /// \brief Return the column name
+  const std::string& name() const { return field()->name(); }
+
+  /// \brief Return the column data type
+  std::shared_ptr<DataType> type() const { return field()->type(); }
+
+  /// \brief Return whether the column is nullable
+  bool nullable() const { return field()->nullable(); }
+
+  /// \brief Return the column chunked array
+  std::shared_ptr<ChunkedArray> chunked_array() const { return chunked_array_; }
+
+  /// \return the total length of the chunked array; computed on construction
+  int64_t length() const { return chunked_array()->length(); }
+
+  /// \return the total number of nulls among all chunks
+  int64_t null_count() const { return chunked_array()->null_count(); }
+
+  /// \return the total number of chunks in the column's chunked array
+  int num_chunks() const { return static_cast<int>(chunks_.size()); }
+
+  /// \return chunk a particular chunk from the column's chunked array
+  std::shared_ptr<Array> chunk(int i) const { return chunks_[i]; }
+
+  /// \brief Construct a zero-copy slice of the column with the indicated
+  /// offset and length
+  ///
+  /// \param[in] offset the position of the first element in the constructed
+  /// slice
+  /// \param[in] length the length of the slice. If there are not enough
+  /// elements in the chunked array, the length will be adjusted accordingly
+  ///
+  /// \return a new object wrapped in std::shared_ptr<ChunkedArray>
+  std::shared_ptr<Column> Slice(int64_t offset, int64_t length) const;
+
+  /// \brief Slice from offset until end of the chunked array
+  std::shared_ptr<Column> Slice(int64_t offset) const;
+
+  /// Construct a zero-copy view of this column with the given type.
+  /// Calls Array::View on each constituent chunk. Always succeeds if
+  /// there are zero-length column
+  Status View(const std::shared_ptr<DataType>& type,
+              std::shared_ptr<Column>* out) const;
+
+  /// \brief Determine if two columns are equal.
+  ///
+  /// Two columns can be equal only if they have equal datatypes.
+  /// However, they may be equal even if they have different chunkings.
+  bool Equals(const Column& other) const;
+
+  /// \brief Determine if two columns are equal.
+  bool Equals(const std::shared_ptr<Column>& other) const;
+
+ protected:
+  std::shared_ptr<Field> field_;
+  std::shared_ptr<ChunkedArray> chunked_array_;
+};
+
 /// \class DataFrame
 class ARROW_DF_EXPORT DataFrame {
  public:
-   virtual ~DataFrame() = default;
+  virtual ~DataFrame() = default;
 
-   /// \brief Construct a DataFrame from a schema and columns
-   /// If columns is zero-length, the data frame's number of rows is zero
-   ///
-   /// \param[in] schema The data frame's schema (column types and names)
-   /// \param[in] columns The data frame's columns as a vector of ChunkedArrays
-   /// \param[in] num_rows The number of rows in the data frame, -1 (default) to infer from columns
-   ///
-   /// \return the resulting DataFrame
-   static std::shared_ptr<DataFrame> Make(
-       const std::shared_ptr<Schema>& schema,
-       const std::vector<std::shared_ptr<ChunkedArray>>& columns,
-       int64_t num_rows = -1);
+  /// \brief Construct a DataFrame from a schema and chunked arrays
+  /// If chunked arrays is zero-length, the data frame's number of rows is zero
+  ///
+  /// \param[in] schema The data frame's schema (column types and names)
+  /// \param[in] columns The data frame's columns as a vector of ChunkedArrays
+  /// \param[out] out The resulting DataFrame
+  static Status FromChunkedArray(
+      const std::shared_ptr<Schema>& schema,
+      const std::vector<std::shared_ptr<ChunkedArray>>& chunked_arrays,
+      std::shared_ptr<DataFrame>* out);
 
-   /// \brief Construct a DataFrame from a schema and arrays
-   ///
-   /// \param[in] schema The data frame's schema (column types and names)
-   /// \param[in] arrays The data frame's columns as a vector of Arrays
-   /// \param[in] num_rows The number of rows in the data frame, -1 (default) to infer from arrays
-   ///
-   /// \return the resulting DataFrame
-   static std::shared_ptr<DataFrame> Make(
-       const std::shared_ptr<Schema>& schema,
-       const std::vector<std::shared_ptr<Array>>& arrays,
-       int64_t num_rows = -1);
+  /// \brief Construct a DataFrame from a schema and chunked arrays
+  /// If chunked arrays is zero-length, the data frame's number of rows is zero
+  ///
+  /// \param[in] schema The data frame's schema (column types and names)
+  /// \param[in] columns The data frame's columns as a vector of ChunkedArrays
+  /// \param[in] num_rows The number of rows in the data frame, -1 (default) to infer from columns
+  /// \param[out] out The resulting DataFrame
+  static Status FromChunkedArray(
+      const std::shared_ptr<Schema>& schema,
+      const std::vector<std::shared_ptr<ChunkedArray>>& chunked_arrays,
+      int64_t num_rows, std::shared_ptr<DataFrame>* out);
+
+  /// \brief Construct a DataFrame from a schema and arrays
+  ///
+  /// \param[in] schema The data frame's schema (column types and names)
+  /// \param[in] arrays The data frame's columns as a vector of Arrays
+  /// \param[out] out The resulting DataFrame
+  static Status FromArrays(
+      const std::shared_ptr<Schema>& schema,
+      const std::vector<std::shared_ptr<Array>>& arrays,
+      std::shared_ptr<DataFrame>* out);
+
+  /// \brief Construct a DataFrame from a schema and arrays
+  ///
+  /// \param[in] schema The data frame's schema (column types and names)
+  /// \param[in] arrays The data frame's columns as a vector of Arrays
+  /// \param[in] num_rows The number of rows in the data frame, -1 (default) to infer from arrays
+  /// \param[out] out The resulting DataFrame
+  static Status FromArrays(
+      const std::shared_ptr<Schema>& schema,
+      const std::vector<std::shared_ptr<Array>>& arrays,
+      int64_t num_rows, std::shared_ptr<DataFrame>* out);
 
   /// \brief Construct a DataFrame from a RecordBatches, using the schema supplied by the first record batch
   static Status FromRecordBatches(
