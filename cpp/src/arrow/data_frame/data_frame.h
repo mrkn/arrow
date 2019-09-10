@@ -32,7 +32,29 @@ namespace data_frame {
 /// \class Column
 class ARROW_DF_EXPORT Column {
  public:
-  explicit Column(const ArrayVector& chunks);
+  /// \brief Construct a column from a vector of arrays
+  ///
+  /// The chunks' data type must equal to field's one.
+  Column(const std::shared_ptr<Field>& field, const ArrayVector& chunks);
+
+  /// \brief Construct a column from a chunked array
+  ///
+  /// The chunked array's data type must equal to field's one.
+  Column(const std::shared_ptr<Field>& field, const std::shared_ptr<ChunkedArray>& chunk);
+
+  /// \brief Construct a column from a single array
+  ///
+  /// The chunked array's data type must equal to field's one.
+  Column(const std::shared_ptr<Field>& field, const std::shared_ptr<Array>& array);
+
+  /// \brief Construct a column from a name and a vector of arrays
+  Column(const std::string& name, const ArrayVector& chunks);
+
+  /// \brief Construct a column from a name and a chunked array
+  Column(const std::string& name, const std::shared_ptr<ChunkedArray>& chunk);
+
+  /// \brief Construct a column from a name and a single array
+  Column(const std::string& name, const std::shared_ptr<Array>& array);
 
   /// \brief Return the column field
   std::shared_ptr<Field> field() const { return field_; }
@@ -47,7 +69,7 @@ class ARROW_DF_EXPORT Column {
   bool nullable() const { return field()->nullable(); }
 
   /// \brief Return the column chunked array
-  std::shared_ptr<ChunkedArray> chunked_array() const { return chunked_array_; }
+  std::shared_ptr<ChunkedArray> chunked_array() const { return data_; }
 
   /// \return the total length of the chunked array; computed on construction
   int64_t length() const { return chunked_array()->length(); }
@@ -56,10 +78,10 @@ class ARROW_DF_EXPORT Column {
   int64_t null_count() const { return chunked_array()->null_count(); }
 
   /// \return the total number of chunks in the column's chunked array
-  int num_chunks() const { return static_cast<int>(chunks_.size()); }
+  int num_chunks() const { return chunked_array()->num_chunks(); }
 
   /// \return chunk a particular chunk from the column's chunked array
-  std::shared_ptr<Array> chunk(int i) const { return chunks_[i]; }
+  std::shared_ptr<Array> chunk(int i) const { return chunked_array()->chunk(i); }
 
   /// \brief Construct a zero-copy slice of the column with the indicated
   /// offset and length
@@ -70,16 +92,14 @@ class ARROW_DF_EXPORT Column {
   /// elements in the chunked array, the length will be adjusted accordingly
   ///
   /// \return a new object wrapped in std::shared_ptr<ChunkedArray>
-  std::shared_ptr<Column> Slice(int64_t offset, int64_t length) const;
+  std::shared_ptr<Column> Slice(int64_t offset, int64_t length) const {
+    return std::make_shared<Column>(field(), chunked_array()->Slice(offset, length));
+  }
 
   /// \brief Slice from offset until end of the chunked array
-  std::shared_ptr<Column> Slice(int64_t offset) const;
-
-  /// Construct a zero-copy view of this column with the given type.
-  /// Calls Array::View on each constituent chunk. Always succeeds if
-  /// there are zero-length column
-  Status View(const std::shared_ptr<DataType>& type,
-              std::shared_ptr<Column>* out) const;
+  std::shared_ptr<Column> Slice(int64_t offset) const {
+    return std::make_shared<Column>(field(), chunked_array()->Slice(offset));
+  }
 
   /// \brief Determine if two columns are equal.
   ///
@@ -90,9 +110,13 @@ class ARROW_DF_EXPORT Column {
   /// \brief Determine if two columns are equal.
   bool Equals(const std::shared_ptr<Column>& other) const;
 
+  /// \brief Verify that the column's array data is consistent with the passed
+  /// field's metadata
+  Status ValidateData() const;
+
  protected:
   std::shared_ptr<Field> field_;
-  std::shared_ptr<ChunkedArray> chunked_array_;
+  std::shared_ptr<ChunkedArray> data_;
 };
 
 /// \class DataFrame
@@ -177,7 +201,7 @@ class ARROW_DF_EXPORT DataFrame {
   //     std::shared_ptr<DataFrame>* data_frame);
 
   /// \brief Dump the content of the data frame into a new Table
-  virtual Status ToTable(std::shared_ptr<Table>* table) const;
+  virtual Status ToTable(std::shared_ptr<Table>* out) const = 0;
 
   /// Return the schema of the data frame
   std::shared_ptr<Schema> schema() const { return schema_; }
@@ -220,10 +244,24 @@ class ARROW_DF_EXPORT DataFrame {
   virtual Status RemoveColumn(int i) const = 0;
 
   /// \brief Add column to the data frame, producing a new DataFrame
-  virtual Status AddColumn(int i, const std::shared_ptr<Field>& field, const std::shared_ptr<ChunkedArray>& column, std::shared_ptr<DataFrame>* out) const = 0;
+  virtual Status AddColumn(int i, const std::shared_ptr<Column>& column,
+                           std::shared_ptr<DataFrame>* out) const = 0;
+
+  /// \brief Add column to the data frame, producing a new DataFrame
+  virtual Status AddColumn(int i, const std::shared_ptr<Field>& field,
+                           const std::shared_ptr<ChunkedArray>& chunk,
+                           std::shared_ptr<DataFrame>* out) const {
+    return AddColumn(i, std::make_shared<Column>(field, column), out);
+  }
 
   /// \brief Add column to the data frame by the inplace mutation
-  virtual Status AddColumn(int i, const std::shared_ptr<Field>& field, const std::shared_ptr<ChunkedArray>& column) = 0;
+  virtual Status AddColumn(int i, const std::shared_ptr<Column>& column) = 0;
+
+  /// \brief Add column to the data frame by the inplace mutation
+  virtual Status AddColumn(int i, const std::shared_ptr<Field>& field,
+                           const std::shared_ptr<ChunkedArray>& chunk) {
+    return AddColumn(i, std::make_shared<Column>(field, chunk));
+  }
 
   /// \brief Set column to the data frame, producing a new DataFrame
   virtual Status SetColumn(int i, const std::shared_ptr<Field>& field, const std::shared_ptr<ChunkedArray>& column, std::shared_ptr<DataFrame>* out) const = 0;
