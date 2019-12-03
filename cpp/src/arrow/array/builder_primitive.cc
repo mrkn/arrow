@@ -66,8 +66,8 @@ Status BooleanBuilder::Resize(int64_t capacity) {
 
 Status BooleanBuilder::FinishInternal(std::shared_ptr<ArrayData>* out) {
   std::shared_ptr<Buffer> null_bitmap, data;
-  RETURN_NOT_OK(null_bitmap_builder_.Finish(&null_bitmap));
-  RETURN_NOT_OK(data_builder_.Finish(&data));
+  ARROW_ASSIGN_OR_RAISE(null_bitmap, null_bitmap_builder_.Finish());
+  ARROW_ASSIGN_OR_RAISE(data, data_builder_.Finish());
 
   *out = ArrayData::Make(boolean(), length_, {null_bitmap, data}, null_count_);
 

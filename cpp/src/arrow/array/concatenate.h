@@ -30,10 +30,20 @@ namespace arrow {
 ///
 /// \param[in] arrays a vector of arrays to be concatenated
 /// \param[in] pool memory to store the result will be allocated from this memory pool
+/// \return the resulting concatenated array
+ARROW_EXPORT
+Result<std::shared_ptr<Array>> Concatenate(const ArrayVector& arrays, MemoryPool* pool);
+
+/// \brief Concatenate arrays
+///
+/// \param[in] arrays a vector of arrays to be concatenated
+/// \param[in] pool memory to store the result will be allocated from this memory pool
 /// \param[out] out the resulting concatenated array
 /// \return Status
-ARROW_EXPORT
-Status Concatenate(const ArrayVector& arrays, MemoryPool* pool,
-                   std::shared_ptr<Array>* out);
+ARROW_DEPRECATED("Use Result-returning version")
+inline Status Concatenate(const ArrayVector& arrays, MemoryPool* pool, std::shared_ptr<Array>* out) {
+  ARROW_ASSIGN_OR_RAISE(*out, Concatenate(arrays, pool));
+  return Status::OK();
+}
 
 }  // namespace arrow

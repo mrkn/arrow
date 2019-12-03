@@ -82,11 +82,10 @@ Status ArrayBuilder::Advance(int64_t elements) {
   return null_bitmap_builder_.Advance(elements);
 }
 
-Status ArrayBuilder::Finish(std::shared_ptr<Array>* out) {
+Result<std::shared_ptr<Array>> ArrayBuilder::Finish() {
   std::shared_ptr<ArrayData> internal_data;
   RETURN_NOT_OK(FinishInternal(&internal_data));
-  *out = MakeArray(internal_data);
-  return Status::OK();
+  return MakeArray(internal_data);
 }
 
 void ArrayBuilder::Reset() {

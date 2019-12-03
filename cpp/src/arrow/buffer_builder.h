@@ -135,19 +135,33 @@ class ARROW_EXPORT BufferBuilder {
   ///
   /// The builder is reset and can be reused afterwards.
   ///
+  /// \param shrink_to_fit if the buffer size is smaller than its capacity,
+  /// reallocate to fit more tightly in memory. Set to false to avoid
+  /// a reallocation, at the expense of potentially more memory consumption.
+  /// \return the finalized Buffer object
+  Result<std::shared_ptr<Buffer>> Finish(bool shrink_to_fit = true) {
+    ARROW_RETURN_NOT_OK(Resize(size_, shrink_to_fit));
+    if (size_ != 0) buffer_->ZeroPadding();
+    std::shared_ptr<Buffer> out = buffer_;
+    if (out == NULLPTR) {
+      ARROW_RETURN_NOT_OK(AllocateBuffer(pool_, 0, &out));
+    }
+    Reset();
+    return out;
+  }
+
+  /// \brief Return result of builder as a Buffer object.
+  ///
+  /// The builder is reset and can be reused afterwards.
+  ///
   /// \param[out] out the finalized Buffer object
   /// \param shrink_to_fit if the buffer size is smaller than its capacity,
   /// reallocate to fit more tightly in memory. Set to false to avoid
   /// a reallocation, at the expense of potentially more memory consumption.
   /// \return Status
+  ARROW_DEPRECATED("Use Result-returning version")
   Status Finish(std::shared_ptr<Buffer>* out, bool shrink_to_fit = true) {
-    ARROW_RETURN_NOT_OK(Resize(size_, shrink_to_fit));
-    if (size_ != 0) buffer_->ZeroPadding();
-    *out = buffer_;
-    if (*out == NULLPTR) {
-      ARROW_RETURN_NOT_OK(AllocateBuffer(pool_, 0, out));
-    }
-    Reset();
+    ARROW_ASSIGN_OR_RAISE(*out, Finish(shrink_to_fit));
     return Status::OK();
   }
 
@@ -237,8 +251,14 @@ class TypedBufferBuilder<
     return bytes_builder_.Advance(length * sizeof(T));
   }
 
-  Status Finish(std::shared_ptr<Buffer>* out, bool shrink_to_fit = true) {
-    return bytes_builder_.Finish(out, shrink_to_fit);
+  Result<std::shared_ptr<Buffer>> Finish(bool shrink_to_fit = true) {
+    return bytes_builder_.Finish(shrink_to_fit);
+  }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<Buffer>* out, bool shrink_to_fit = true) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish(shrink_to_fit));
+    return Status::OK();
   }
 
   void Reset() { bytes_builder_.Reset(); }
@@ -348,12 +368,18 @@ class TypedBufferBuilder<bool> {
     return Status::OK();
   }
 
-  Status Finish(std::shared_ptr<Buffer>* out, bool shrink_to_fit = true) {
+  Result<std::shared_ptr<Buffer>> Finish(bool shrink_to_fit = true) {
     // set bytes_builder_.size_ == byte size of data
     bytes_builder_.UnsafeAdvance(BitUtil::BytesForBits(bit_length_) -
                                  bytes_builder_.length());
     bit_length_ = false_count_ = 0;
-    return bytes_builder_.Finish(out, shrink_to_fit);
+    return bytes_builder_.Finish(shrink_to_fit);
+  }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  Status Finish(std::shared_ptr<Buffer>* out, bool shrink_to_fit = true) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish(shrink_to_fit));
+    return Status::OK();
   }
 
   void Reset() {

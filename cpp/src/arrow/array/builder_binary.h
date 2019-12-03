@@ -259,9 +259,9 @@ class BaseBinaryBuilder : public ArrayBuilder {
 
     // These buffers' padding zeroed by BufferBuilder
     std::shared_ptr<Buffer> offsets, value_data, null_bitmap;
-    ARROW_RETURN_NOT_OK(offsets_builder_.Finish(&offsets));
-    ARROW_RETURN_NOT_OK(value_data_builder_.Finish(&value_data));
-    ARROW_RETURN_NOT_OK(null_bitmap_builder_.Finish(&null_bitmap));
+    ARROW_ASSIGN_OR_RAISE(offsets, offsets_builder_.Finish());
+    ARROW_ASSIGN_OR_RAISE(value_data, value_data_builder_.Finish());
+    ARROW_ASSIGN_OR_RAISE(null_bitmap, null_bitmap_builder_.Finish());
 
     *out = ArrayData::Make(type(), length_, {null_bitmap, offsets, value_data},
                            null_count_, 0);
@@ -342,7 +342,13 @@ class ARROW_EXPORT BinaryBuilder : public BaseBinaryBuilder<BinaryType> {
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<BinaryArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<BinaryArray>> Finish() { return FinishTyped<BinaryArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<BinaryArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 
   std::shared_ptr<DataType> type() const override { return binary(); }
 };
@@ -357,7 +363,13 @@ class ARROW_EXPORT StringBuilder : public BinaryBuilder {
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<StringArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<StringArray>> Finish() { return FinishTyped<StringArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<StringArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 
   std::shared_ptr<DataType> type() const override { return utf8(); }
 };
@@ -372,7 +384,13 @@ class ARROW_EXPORT LargeBinaryBuilder : public BaseBinaryBuilder<LargeBinaryType
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<LargeBinaryArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<LargeBinaryArray>> Finish() { return FinishTyped<LargeBinaryArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<LargeBinaryArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 
   std::shared_ptr<DataType> type() const override { return large_binary(); }
 };
@@ -387,7 +405,13 @@ class ARROW_EXPORT LargeStringBuilder : public LargeBinaryBuilder {
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<LargeStringArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<LargeStringArray>> Finish() { return FinishTyped<LargeStringArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<LargeStringArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 
   std::shared_ptr<DataType> type() const override { return large_utf8(); }
 };
@@ -466,7 +490,13 @@ class ARROW_EXPORT FixedSizeBinaryBuilder : public ArrayBuilder {
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<FixedSizeBinaryArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<FixedSizeBinaryArray>> Finish() { return FinishTyped<FixedSizeBinaryArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<FixedSizeBinaryArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 
   /// \return size of values buffer so far
   int64_t value_data_length() const { return byte_builder_.length(); }
@@ -561,7 +591,7 @@ class ARROW_EXPORT ChunkedBinaryBuilder {
 
   Status Reserve(int64_t values);
 
-  virtual Status Finish(ArrayVector* out);
+  virtual Result<ArrayVector> Finish();
 
  protected:
   Status NextChunk();
@@ -584,7 +614,7 @@ class ARROW_EXPORT ChunkedStringBuilder : public ChunkedBinaryBuilder {
  public:
   using ChunkedBinaryBuilder::ChunkedBinaryBuilder;
 
-  Status Finish(ArrayVector* out) override;
+  Result<ArrayVector> Finish() override;
 };
 
 }  // namespace internal

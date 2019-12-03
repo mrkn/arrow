@@ -110,7 +110,7 @@ Status AdaptiveIntBuilder::FinishInternal(std::shared_ptr<ArrayData>* out) {
   RETURN_NOT_OK(CommitPendingData());
 
   std::shared_ptr<Buffer> null_bitmap;
-  RETURN_NOT_OK(null_bitmap_builder_.Finish(&null_bitmap));
+  ARROW_ASSIGN_OR_RAISE(null_bitmap, null_bitmap_builder_.Finish());
   RETURN_NOT_OK(TrimBuffer(length_ * int_size_, data_.get()));
 
   *out = ArrayData::Make(type(), length_, {null_bitmap, data_}, null_count_);
@@ -267,7 +267,7 @@ Status AdaptiveUIntBuilder::FinishInternal(std::shared_ptr<ArrayData>* out) {
   RETURN_NOT_OK(CommitPendingData());
 
   std::shared_ptr<Buffer> null_bitmap;
-  RETURN_NOT_OK(null_bitmap_builder_.Finish(&null_bitmap));
+  ARROW_ASSIGN_OR_RAISE(null_bitmap, null_bitmap_builder_.Finish());
   RETURN_NOT_OK(TrimBuffer(length_ * int_size_, data_.get()));
 
   *out = ArrayData::Make(type(), length_, {null_bitmap, data_}, null_count_);

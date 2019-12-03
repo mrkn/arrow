@@ -356,8 +356,7 @@ class ConcatenateImpl {
   ArrayData out_;
 };
 
-Status Concatenate(const ArrayVector& arrays, MemoryPool* pool,
-                   std::shared_ptr<Array>* out) {
+Result<std::shared_ptr<Array>> Concatenate(const ArrayVector& arrays, MemoryPool* pool) {
   if (arrays.size() == 0) {
     return Status::Invalid("Must pass at least one array");
   }
@@ -375,8 +374,7 @@ Status Concatenate(const ArrayVector& arrays, MemoryPool* pool,
 
   ArrayData out_data;
   RETURN_NOT_OK(ConcatenateImpl(data, pool).Concatenate(&out_data));
-  *out = MakeArray(std::make_shared<ArrayData>(std::move(out_data)));
-  return Status::OK();
+  return MakeArray(std::make_shared<ArrayData>(std::move(out_data)));
 }
 
 }  // namespace arrow

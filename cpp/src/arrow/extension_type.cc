@@ -62,7 +62,7 @@ void ExtensionArray::SetData(const std::shared_ptr<ArrayData>& data) {
 
   auto storage_data = data->Copy();
   storage_data->type = (static_cast<const ExtensionType&>(*data->type).storage_type());
-  storage_ = MakeArray(storage_data);
+  storage_ = MakeArrayUnsafe(storage_data);
 }
 
 class ExtensionTypeRegistryImpl : public ExtensionTypeRegistry {

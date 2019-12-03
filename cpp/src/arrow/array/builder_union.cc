@@ -30,8 +30,8 @@ using internal::checked_pointer_cast;
 
 Status BasicUnionBuilder::FinishInternal(std::shared_ptr<ArrayData>* out) {
   std::shared_ptr<Buffer> types, null_bitmap;
-  RETURN_NOT_OK(null_bitmap_builder_.Finish(&null_bitmap));
-  RETURN_NOT_OK(types_builder_.Finish(&types));
+  ARROW_ASSIGN_OR_RAISE(null_bitmap, null_bitmap_builder_.Finish());
+  ARROW_ASSIGN_OR_RAISE(types, types_builder_.Finish());
 
   std::vector<std::shared_ptr<ArrayData>> child_data(children_.size());
   for (size_t i = 0; i < children_.size(); ++i) {

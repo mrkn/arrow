@@ -91,7 +91,7 @@ class SimpleRecordBatch : public RecordBatch {
   std::shared_ptr<Array> column(int i) const override {
     std::shared_ptr<Array> result = internal::atomic_load(&boxed_columns_[i]);
     if (!result) {
-      result = MakeArray(columns_[i]);
+      result = MakeArrayUnsafe(columns_[i]);
       internal::atomic_store(&boxed_columns_[i], result);
     }
     return result;

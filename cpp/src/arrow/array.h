@@ -225,7 +225,13 @@ struct ARROW_EXPORT ArrayData {
 /// \param[in] data the array contents
 /// \return the resulting Array instance
 ARROW_EXPORT
-std::shared_ptr<Array> MakeArray(const std::shared_ptr<ArrayData>& data);
+Result<std::shared_ptr<Array>> MakeArray(const std::shared_ptr<ArrayData>& data);
+
+/// \brief Create a strongly-typed Array instance from generic ArrayData
+/// \param[in] data the array contents
+/// \return the resulting Array instance
+ARROW_EXPORT
+std::shared_ptr<Array> MakeArrayUnsafe(const std::shared_ptr<ArrayData>& data);
 
 /// \brief Create a strongly-typed Array instance with all elements null
 /// \param[in] type the array type

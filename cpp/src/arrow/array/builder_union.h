@@ -36,7 +36,13 @@ class ARROW_EXPORT BasicUnionBuilder : public ArrayBuilder {
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<UnionArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<UnionArray>> Finish() { return FinishTyped<UnionArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<UnionArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 
   /// \brief Make a new child builder available to the UnionArray
   ///
@@ -127,7 +133,8 @@ class ARROW_EXPORT DenseUnionBuilder : public BasicUnionBuilder {
 
   Status FinishInternal(std::shared_ptr<ArrayData>* out) override {
     ARROW_RETURN_NOT_OK(BasicUnionBuilder::FinishInternal(out));
-    return offsets_builder_.Finish(&(*out)->buffers[2]);
+    ARROW_ASSIGN_OR_RAISE((*out)->buffers[2], offsets_builder_.Finish());
+    return Status::OK();
   }
 
  private:

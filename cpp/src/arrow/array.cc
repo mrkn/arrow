@@ -176,7 +176,7 @@ bool Array::RangeEquals(int64_t start_idx, int64_t end_idx, int64_t other_start_
 }
 
 std::shared_ptr<Array> Array::Slice(int64_t offset, int64_t length) const {
-  return MakeArray(std::make_shared<ArrayData>(data_->Slice(offset, length)));
+  return MakeArrayUnsafe(std::make_shared<ArrayData>(data_->Slice(offset, length)));
 }
 
 std::shared_ptr<Array> Array::Slice(int64_t offset) const {
@@ -1184,12 +1184,18 @@ class ArrayDataWrapper {
 
 }  // namespace internal
 
-std::shared_ptr<Array> MakeArray(const std::shared_ptr<ArrayData>& data) {
+Result<std::shared_ptr<Array>> MakeArray(const std::shared_ptr<ArrayData>& data) {
   std::shared_ptr<Array> out;
   internal::ArrayDataWrapper wrapper_visitor(data, &out);
-  DCHECK_OK(VisitTypeInline(*data->type, &wrapper_visitor));
-  DCHECK(out);
+  RETURN_NOT_OK(VisitTypeInline(*data->type, &wrapper_visitor));
+  if (!out) {
+    return Status::OutOfMemory("Unable to allocate a new Array.");
+  }
   return out;
+}
+
+std::shared_ptr<Array> MakeArrayUnsafe(const std::shared_ptr<ArrayData>& data) {
+  return MakeArray(data).ValueOrDie();
 }
 
 // ----------------------------------------------------------------------

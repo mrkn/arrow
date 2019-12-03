@@ -680,7 +680,7 @@ Status Table::CombineChunks(MemoryPool* pool, std::shared_ptr<Table>* out) const
       compacted_columns[i] = col;
     } else {
       std::shared_ptr<Array> compacted;
-      RETURN_NOT_OK(Concatenate(col->chunks(), pool, &compacted));
+      ARROW_ASSIGN_OR_RAISE(compacted, Concatenate(col->chunks(), pool));
       compacted_columns[i] = std::make_shared<ChunkedArray>(compacted);
     }
   }

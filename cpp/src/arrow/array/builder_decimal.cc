@@ -65,9 +65,9 @@ void Decimal128Builder::UnsafeAppend(util::string_view value) {
 
 Status Decimal128Builder::FinishInternal(std::shared_ptr<ArrayData>* out) {
   std::shared_ptr<Buffer> data;
-  RETURN_NOT_OK(byte_builder_.Finish(&data));
+  ARROW_ASSIGN_OR_RAISE(data, byte_builder_.Finish());
   std::shared_ptr<Buffer> null_bitmap;
-  RETURN_NOT_OK(null_bitmap_builder_.Finish(&null_bitmap));
+  ARROW_ASSIGN_OR_RAISE(null_bitmap, null_bitmap_builder_.Finish());
 
   *out = ArrayData::Make(type(), length_, {null_bitmap, data}, null_count_);
   capacity_ = length_ = null_count_ = 0;

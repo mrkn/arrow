@@ -86,10 +86,10 @@ Status FixedSizeBinaryBuilder::Resize(int64_t capacity) {
 
 Status FixedSizeBinaryBuilder::FinishInternal(std::shared_ptr<ArrayData>* out) {
   std::shared_ptr<Buffer> data;
-  RETURN_NOT_OK(byte_builder_.Finish(&data));
+  ARROW_ASSIGN_OR_RAISE(data, byte_builder_.Finish());
 
   std::shared_ptr<Buffer> null_bitmap;
-  RETURN_NOT_OK(null_bitmap_builder_.Finish(&null_bitmap));
+  ARROW_ASSIGN_OR_RAISE(null_bitmap, null_bitmap_builder_.Finish());
   *out = ArrayData::Make(type(), length_, {null_bitmap, data}, null_count_);
 
   capacity_ = length_ = null_count_ = 0;
@@ -124,19 +124,18 @@ ChunkedBinaryBuilder::ChunkedBinaryBuilder(int32_t max_chunk_value_length,
   max_chunk_length_ = max_chunk_length;
 }
 
-Status ChunkedBinaryBuilder::Finish(ArrayVector* out) {
+Result<ArrayVector> ChunkedBinaryBuilder::Finish() {
   if (builder_->length() > 0 || chunks_.size() == 0) {
     std::shared_ptr<Array> chunk;
-    RETURN_NOT_OK(builder_->Finish(&chunk));
+    ARROW_ASSIGN_OR_RAISE(chunk, builder_->Finish());
     chunks_.emplace_back(std::move(chunk));
   }
-  *out = std::move(chunks_);
-  return Status::OK();
+  return std::move(chunks_);
 }
 
 Status ChunkedBinaryBuilder::NextChunk() {
   std::shared_ptr<Array> chunk;
-  RETURN_NOT_OK(builder_->Finish(&chunk));
+  ARROW_ASSIGN_OR_RAISE(chunk, builder_->Finish());
   chunks_.emplace_back(std::move(chunk));
 
   if (auto capacity = extra_capacity_) {
@@ -147,16 +146,17 @@ Status ChunkedBinaryBuilder::NextChunk() {
   return Status::OK();
 }
 
-Status ChunkedStringBuilder::Finish(ArrayVector* out) {
-  RETURN_NOT_OK(ChunkedBinaryBuilder::Finish(out));
+Result<ArrayVector> ChunkedStringBuilder::Finish() {
+  ArrayVector out;
+  ARROW_ASSIGN_OR_RAISE(out, ChunkedBinaryBuilder::Finish());
 
   // Change data type to string/utf8
-  for (size_t i = 0; i < out->size(); ++i) {
-    std::shared_ptr<ArrayData> data = (*out)[i]->data();
+  for (size_t i = 0; i < out.size(); ++i) {
+    std::shared_ptr<ArrayData> data = out[i]->data();
     data->type = ::arrow::utf8();
-    (*out)[i] = std::make_shared<StringArray>(data);
+    out[i] = std::make_shared<StringArray>(data);
   }
-  return Status::OK();
+  return std::move(out);
 }
 
 Status ChunkedBinaryBuilder::Reserve(int64_t values) {

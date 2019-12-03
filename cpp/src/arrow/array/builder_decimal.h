@@ -47,7 +47,13 @@ class ARROW_EXPORT Decimal128Builder : public FixedSizeBinaryBuilder {
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<Decimal128Array>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<Decimal128Array>> Finish() { return FinishTyped<Decimal128Array>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<Decimal128Array>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 
   std::shared_ptr<DataType> type() const override { return decimal_type_; }
 

@@ -107,8 +107,8 @@ class BaseListBuilder : public ArrayBuilder {
 
     // Offset padding zeroed by BufferBuilder
     std::shared_ptr<Buffer> offsets, null_bitmap;
-    ARROW_RETURN_NOT_OK(offsets_builder_.Finish(&offsets));
-    ARROW_RETURN_NOT_OK(null_bitmap_builder_.Finish(&null_bitmap));
+    ARROW_ASSIGN_OR_RAISE(offsets, offsets_builder_.Finish());
+    ARROW_ASSIGN_OR_RAISE(null_bitmap, null_bitmap_builder_.Finish());
 
     if (value_builder_->length() == 0) {
       // Try to make sure we get a non-null values buffer (ARROW-2744)
@@ -177,7 +177,13 @@ class ARROW_EXPORT ListBuilder : public BaseListBuilder<ListType> {
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<ListArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<ListArray>> Finish() { return FinishTyped<ListArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<ListArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 };
 
 /// \class LargeListBuilder
@@ -192,7 +198,13 @@ class ARROW_EXPORT LargeListBuilder : public BaseListBuilder<LargeListType> {
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<LargeListArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<LargeListArray>> Finish() { return FinishTyped<LargeListArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<LargeListArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 };
 
 // ----------------------------------------------------------------------
@@ -228,7 +240,13 @@ class ARROW_EXPORT MapBuilder : public ArrayBuilder {
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<MapArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<MapArray>> Finish() { return FinishTyped<MapArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<MapArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 
   /// \brief Vector append
   ///
@@ -288,7 +306,13 @@ class ARROW_EXPORT FixedSizeListBuilder : public ArrayBuilder {
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<FixedSizeListArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<FixedSizeListArray>> Finish() { return FinishTyped<FixedSizeListArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<FixedSizeListArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 
   /// \brief Append a valid fixed length list.
   ///
@@ -350,7 +374,13 @@ class ARROW_EXPORT StructBuilder : public ArrayBuilder {
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<StructArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<StructArray>> Finish() { return FinishTyped<StructArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<StructArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 
   /// Null bitmap is of equal length to every child field, and any zero byte
   /// will be considered as a null for that field, but users must using app-

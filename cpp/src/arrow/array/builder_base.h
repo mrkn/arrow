@@ -119,9 +119,20 @@ class ARROW_EXPORT ArrayBuilder {
   ///
   /// The builder is reset except for DictionaryBuilder.
   ///
+  /// \return out the finalized Array object
+  Result<std::shared_ptr<Array>> Finish();
+
+  /// \brief Return result of builder as an Array object.
+  ///
+  /// The builder is reset except for DictionaryBuilder.
+  ///
   /// \param[out] out the finalized Array object
   /// \return Status
-  Status Finish(std::shared_ptr<Array>* out);
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<Array>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 
   /// \brief Return the type of the built Array
   virtual std::shared_ptr<DataType> type() const = 0;
@@ -183,10 +194,17 @@ class ARROW_EXPORT ArrayBuilder {
 
   /// \brief Finish to an array of the specified ArrayType
   template <typename ArrayType>
-  Status FinishTyped(std::shared_ptr<ArrayType>* out) {
+  Result<std::shared_ptr<ArrayType>> FinishTyped() {
     std::shared_ptr<Array> out_untyped;
-    ARROW_RETURN_NOT_OK(Finish(&out_untyped));
-    *out = std::static_pointer_cast<ArrayType>(std::move(out_untyped));
+    ARROW_ASSIGN_OR_RAISE(out_untyped, Finish());
+    return std::static_pointer_cast<ArrayType>(std::move(out_untyped));
+  }
+
+  /// \brief Finish to an array of the specified ArrayType
+  template <typename ArrayType>
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status FinishTyped(std::shared_ptr<ArrayType>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, FinishTyped<ArrayType>());
     return Status::OK();
   }
 

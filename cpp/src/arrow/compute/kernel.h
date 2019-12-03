@@ -159,7 +159,7 @@ struct ARROW_EXPORT Datum {
   }
 
   std::shared_ptr<Array> make_array() const {
-    return MakeArray(util::get<std::shared_ptr<ArrayData>>(this->value));
+    return MakeArrayUnsafe(util::get<std::shared_ptr<ArrayData>>(this->value));
   }
 
   std::shared_ptr<ChunkedArray> chunked_array() const {

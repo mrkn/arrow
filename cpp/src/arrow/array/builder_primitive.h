@@ -52,7 +52,13 @@ class ARROW_EXPORT NullBuilder : public ArrayBuilder {
 
   std::shared_ptr<DataType> type() const override { return null(); }
 
-  Status Finish(std::shared_ptr<NullArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<NullArray>> Finish() { return FinishTyped<NullArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<NullArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 };
 
 /// Base class for all Builders that emit an Array of a scalar numerical type.
@@ -426,7 +432,13 @@ class ARROW_EXPORT BooleanBuilder : public ArrayBuilder {
   using ArrayBuilder::Finish;
   /// \endcond
 
-  Status Finish(std::shared_ptr<BooleanArray>* out) { return FinishTyped(out); }
+  Result<std::shared_ptr<BooleanArray>> Finish() { return FinishTyped<BooleanArray>(); }
+
+  ARROW_DEPRECATED("Use Result-returning version")
+  inline Status Finish(std::shared_ptr<BooleanArray>* out) {
+    ARROW_ASSIGN_OR_RAISE(*out, Finish());
+    return Status::OK();
+  }
 
   void Reset() override;
   Status Resize(int64_t capacity) override;

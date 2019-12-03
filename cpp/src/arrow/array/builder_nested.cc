@@ -178,7 +178,7 @@ Status FixedSizeListBuilder::FinishInternal(std::shared_ptr<ArrayData>* out) {
   RETURN_NOT_OK(value_builder_->FinishInternal(&items));
 
   std::shared_ptr<Buffer> null_bitmap;
-  RETURN_NOT_OK(null_bitmap_builder_.Finish(&null_bitmap));
+  ARROW_ASSIGN_OR_RAISE(null_bitmap, null_bitmap_builder_.Finish());
   *out = ArrayData::Make(type(), length_, {null_bitmap}, {std::move(items)}, null_count_);
   Reset();
   return Status::OK();
@@ -208,7 +208,7 @@ Status StructBuilder::AppendNulls(int64_t length) {
 
 Status StructBuilder::FinishInternal(std::shared_ptr<ArrayData>* out) {
   std::shared_ptr<Buffer> null_bitmap;
-  RETURN_NOT_OK(null_bitmap_builder_.Finish(&null_bitmap));
+  ARROW_ASSIGN_OR_RAISE(null_bitmap, null_bitmap_builder_.Finish());
 
   std::vector<std::shared_ptr<ArrayData>> child_data(children_.size());
   for (size_t i = 0; i < children_.size(); ++i) {
