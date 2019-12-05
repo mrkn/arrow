@@ -166,6 +166,10 @@ if test "x$GARROW_ARROW_CPP_BUILD_DIR" = "x"; then
                     [arrow-cuda],
                     [HAVE_ARROW_CUDA=yes],
                     [HAVE_ARROW_CUDA=no])
+  PKG_CHECK_MODULES([ARROW_DATASET],
+                    [arrow-dataset],
+                    [HAVE_ARROW_DATASET=yes],
+                    [HAVE_ARROW_DATASET=no])
   PKG_CHECK_MODULES([GANDIVA],
                     [gandiva],
                     [HAVE_GANDIVA=yes],
@@ -213,6 +217,20 @@ else
   AC_SUBST(ARROW_CUDA_CFLAGS)
   AC_SUBST(ARROW_CUDA_LIBS)
   AC_SUBST(ARROW_CUDA_PKG_CONFIG_PATH)
+
+  ARROW_DATASET_CFLAGS=""
+  if test -f "${GARROW_ARROW_CPP_BUILD_DIR}/src/arrow/dataset/arrow-dataset.pc"; then
+    HAVE_ARROW_DATASET=yes
+    ARROW_DATASET_LIBS="-larrow_dataset"
+    ARROW_DATASET_PKG_CONFIG_PATH="\$(ARROW_BUILD_DIR)/src/arrow/dataset"
+  else
+    HAVE_ARROW_DATASET=no
+    ARROW_DATASET_LIBS=""
+    ARROW_DATASET_PKG_CONFIG_PATH=""
+  fi
+  AC_SUBST(ARROW_DATASET_CFLAGS)
+  AC_SUBST(ARROW_DATASET_LIBS)
+  AC_SUBST(ARROW_DATASET_PKG_CONFIG_PATH)
 
   GANDIVA_CFLAGS=""
   if test -f "${GARROW_ARROW_CPP_BUILD_DIR}/src/gandiva/gandiva.pc"; then
@@ -271,6 +289,11 @@ fi
 AC_SUBST(ARROW_CUDA_GLIB_PACKAGE)
 AC_SUBST(PLASMA_ARROW_CUDA_PKG_CONFIG_PATH)
 
+AM_CONDITIONAL([HAVE_ARROW_DATASET], [test "$HAVE_ARROW_DATASET" = "yes"])
+if test "$HAVE_ARROW_DATASET" = "yes"; then
+  AC_DEFINE(HAVE_ARROW_DATASET, [1], [Define to 1 if Apache Arrow Datasets exists.])
+fi
+
 AM_CONDITIONAL([HAVE_GANDIVA], [test "$HAVE_GANDIVA" = "yes"])
 if test "$HAVE_GANDIVA" = "yes"; then
   AC_DEFINE(HAVE_GANDIVA, [1], [Define to 1 if Gandiva exists.])
@@ -293,6 +316,8 @@ AC_CONFIG_FILES([
   Makefile
   arrow-cuda-glib/Makefile
   arrow-cuda-glib/arrow-cuda-glib.pc
+  arrow-dataset-glib/Makefile
+  arrow-dataset-glib/arrow-dataset.pc
   arrow-glib/Makefile
   arrow-glib/arrow-glib.pc
   arrow-glib/arrow-orc-glib.pc
