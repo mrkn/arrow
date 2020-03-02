@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -972,13 +973,22 @@ Result<std::shared_ptr<SparseIndex>> ReadSparseCSFIndex(
       sparse_index, &indices_size, &axis_order, &indptr_type, &indices_type));
 
   for (int64_t i = 0; i < ndim - 1; ++i) {
-    ARROW_ASSIGN_OR_RAISE(indptr_data[i], file->ReadAt(indptr_buffers->Get(i)->offset(),
-                                                       indptr_buffers->Get(i)->length()));
+    const auto* buffer = indptr_buffers->Get(i);
+    std::cerr << "[" << i << "] indptr buffer = " << buffer
+              << "(offset = " << buffer->offset()
+              << ", length = " << buffer->length() << ")"
+              << std::endl;
+
+    ARROW_ASSIGN_OR_RAISE(indptr_data[i], file->ReadAt(buffer->offset(), buffer->length()));
   }
   for (int64_t i = ndim - 1; i < 2 * ndim - 1; ++i) {
-    ARROW_ASSIGN_OR_RAISE(indices_data[i],
-                          file->ReadAt(indices_buffers->Get(i)->offset(),
-                                       indices_buffers->Get(i)->length()));
+    const auto* buffer = indices_buffers->Get(i);
+    std::cerr << "[" << i << "] indices buffer = " << buffer
+              << "(offset = " << buffer->offset()
+              << ", length = " << buffer->length() << ")"
+              << std::endl;
+
+    ARROW_ASSIGN_OR_RAISE(indices_data[i], file->ReadAt(buffer->offset(), buffer->length()));
   }
 
   return SparseCSFIndex::Make(indptr_type, indices_type, indices_size, axis_order,

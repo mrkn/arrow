@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <iostream>
 #include <limits>
 #include <sstream>
 #include <utility>
@@ -816,10 +817,18 @@ class SparseTensorSerializer {
   }
 
   Status VisitSparseCSFIndex(const SparseCSFIndex& sparse_index) {
+    int i = 0;
     for (const auto buffer : sparse_index.indptr()) {
+      std::cerr << "[" << i++ << "] indptr buffer = " << buffer
+                << "(size = " << buffer->size() << ")"
+                << std::endl;
       out_->body_buffers.emplace_back(buffer->data());
     }
+    i = 0;
     for (const auto buffer : sparse_index.indices()) {
+      std::cerr << "[" << i++ << "] indices buffer = " << buffer
+                << "(size = " << buffer->size() << ")"
+                << std::endl;
       out_->body_buffers.emplace_back(buffer->data());
     }
     return Status::OK();
