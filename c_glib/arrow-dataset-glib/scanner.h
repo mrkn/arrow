@@ -73,15 +73,16 @@ struct _GADScanTaskClass
   GObjectClass parent_class;
 };
 
-GList *
+GArrowRecordBatchIterator *
 gad_scan_task_execute(GADScanTask *task,
                       GError **error);
 
+/* TODO
 const GADScanOptions *
 gad_scan_task_get_options(GADScanTask *task);
 
 const GADScanContext *
-gad_scan_task_get_context(GADScanTask *task);
+gad_scan_task_get_context(GADScanTask *task); */
 
 /* arrow::dataset::InMemoryScanTask */
 
@@ -97,19 +98,19 @@ struct _GADInMemoryScanTaskClass
 };
 
 GADInMemoryScanTask *
-gad_in_memory_scan_task_new(GArrowRecordBatch **record_batches,
-                            gsize n_record_batches,
+gad_in_memory_scan_task_new(GList *record_batches,
                             GADScanOptions *options,
                             GADScanContext *context);
 
 /* arrow::dataset::ScanTaskIteratorFromRecordBatch() */
 
+/* TODO
 GList *
 gad_scan_tasks_from_record_batch(GArrowRecordBatch **record_batches,
                                  gsize n_record_batches,
                                  GADScanOptions *options,
                                  GADScanContext *context,
-                                 GError **error);
+                                 GError **error); */
 
 /* arrow::dataset::Scanner */
 

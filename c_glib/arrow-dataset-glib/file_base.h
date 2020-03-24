@@ -148,16 +148,6 @@ gad_file_system_dataset_new_partitions(GArrowSchema *schema,
                                        GADExpression **partitions,
                                        gsize n_partitions);
 
-/* TODO: GArrowPathForest */
-GADFileSystemDataset *
-gad_file_system_dataset_new_forest(GArrowSchema *schema,
-                                   GADExpression *root_partition,
-                                   GADFileFormat *format,
-                                   GArrowFileSystem *file_system,
-                                   GArrowPathForest *forest,
-                                   GADExpression **partitions,
-                                   gsize n_partitions);
-
 GADFileFormat *
 gad_file_system_dataset_get_format(GADFileSystemDataset *dataset);
 
