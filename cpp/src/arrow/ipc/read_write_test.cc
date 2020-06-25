@@ -1689,13 +1689,13 @@ class TestSparseTensorRoundTrip : public ::testing::Test, public IpcTestFixture 
   }
 
   template <typename ValueType>
-  std::shared_ptr<SparseCOOTensor> MakeSparseCOOTensor(
+  Result<std::shared_ptr<SparseCOOTensor>> MakeSparseCOOTensor(
       const std::shared_ptr<SparseCOOIndex>& si, std::vector<ValueType>& sparse_values,
       const std::vector<int64_t>& shape,
       const std::vector<std::string>& dim_names = {}) const {
     auto data = Buffer::Wrap(sparse_values);
-    return std::make_shared<SparseCOOTensor>(si, CTypeTraits<ValueType>::type_singleton(),
-                                             data, shape, dim_names);
+    return SparseCOOTensor::Make(si, CTypeTraits<ValueType>::type_singleton(), data,
+                                 shape, dim_names);
   }
 };
 
@@ -1743,7 +1743,8 @@ TYPED_TEST_P(TestSparseTensorRoundTrip, WithSparseCOOIndexRowMajor) {
   std::vector<int64_t> shape = {2, 3, 4};
   std::vector<std::string> dim_names = {"foo", "bar", "baz"};
   std::vector<int64_t> values = {1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16};
-  auto st = this->MakeSparseCOOTensor(si, values, shape, dim_names);
+  std::shared_ptr<SparseCOOTensor> st;
+  ASSERT_OK_AND_ASSIGN(st, this->MakeSparseCOOTensor(si, values, shape, dim_names));
 
   this->CheckSparseCOOTensorRoundTrip(*st);
 }
@@ -1790,7 +1791,9 @@ TYPED_TEST_P(TestSparseTensorRoundTrip, WithSparseCOOIndexColumnMajor) {
   std::vector<int64_t> shape = {2, 3, 4};
   std::vector<std::string> dim_names = {"foo", "bar", "baz"};
   std::vector<int64_t> values = {1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15, 16};
-  auto st = this->MakeSparseCOOTensor(si, values, shape, dim_names);
+
+  std::shared_ptr<SparseCOOTensor> st;
+  ASSERT_OK_AND_ASSIGN(st, this->MakeSparseCOOTensor(si, values, shape, dim_names));
 
   this->CheckSparseCOOTensorRoundTrip(*st);
 }
