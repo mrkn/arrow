@@ -61,6 +61,7 @@ namespace flatbuf = org::apache::arrow::flatbuf;
 
 using internal::checked_cast;
 using internal::checked_pointer_cast;
+using internal::GetByteWidth;
 
 namespace ipc {
 
@@ -1174,8 +1175,7 @@ Result<std::shared_ptr<SparseIndex>> ReadSparseCOOIndex(
 
   std::shared_ptr<DataType> indices_type;
   RETURN_NOT_OK(internal::GetSparseCOOIndexMetadata(sparse_index, &indices_type));
-  const int64_t indices_elsize =
-      checked_cast<const IntegerType&>(*indices_type).bit_width() / 8;
+  const int64_t indices_elsize = GetByteWidth(*indices_type);
 
   auto* indices_buffer = sparse_index->indicesBuffer();
   ARROW_ASSIGN_OR_RAISE(auto indices_data,
@@ -1210,6 +1210,7 @@ Result<std::shared_ptr<SparseIndex>> ReadSparseCSXIndex(
   std::shared_ptr<DataType> indptr_type, indices_type;
   RETURN_NOT_OK(
       internal::GetSparseCSXIndexMetadata(sparse_index, &indptr_type, &indices_type));
+  const int indptr_byte_width = GetByteWidth(*indptr_type);
 
   auto* indptr_buffer = sparse_index->indptrBuffer();
   ARROW_ASSIGN_OR_RAISE(auto indptr_data,
@@ -1220,9 +1221,7 @@ Result<std::shared_ptr<SparseIndex>> ReadSparseCSXIndex(
                         file->ReadAt(indices_buffer->offset(), indices_buffer->length()));
 
   std::vector<int64_t> indices_shape({non_zero_length});
-  const auto indices_minimum_bytes =
-      indices_shape[0] * checked_pointer_cast<FixedWidthType>(indices_type)->bit_width() /
-      CHAR_BIT;
+  const auto indices_minimum_bytes = indices_shape[0] * GetByteWidth(*indices_type);
   if (indices_minimum_bytes > indices_buffer->length()) {
     return Status::Invalid("shape is inconsistent to the size of indices buffer");
   }
@@ -1230,9 +1229,7 @@ Result<std::shared_ptr<SparseIndex>> ReadSparseCSXIndex(
   switch (sparse_index->compressedAxis()) {
     case flatbuf::SparseMatrixCompressedAxis::Row: {
       std::vector<int64_t> indptr_shape({shape[0] + 1});
-      const int64_t indptr_minimum_bytes =
-          indptr_shape[0] *
-          checked_pointer_cast<FixedWidthType>(indptr_type)->bit_width() / CHAR_BIT;
+      const int64_t indptr_minimum_bytes = indptr_shape[0] * indptr_byte_width;
       if (indptr_minimum_bytes > indptr_buffer->length()) {
         return Status::Invalid("shape is inconsistent to the size of indptr buffer");
       }
@@ -1242,9 +1239,7 @@ Result<std::shared_ptr<SparseIndex>> ReadSparseCSXIndex(
     }
     case flatbuf::SparseMatrixCompressedAxis::Column: {
       std::vector<int64_t> indptr_shape({shape[1] + 1});
-      const int64_t indptr_minimum_bytes =
-          indptr_shape[0] *
-          checked_pointer_cast<FixedWidthType>(indptr_type)->bit_width() / CHAR_BIT;
+      const int64_t indptr_minimum_bytes = indptr_shape[0] * indptr_byte_width;
       if (indptr_minimum_bytes > indptr_buffer->length()) {
         return Status::Invalid("shape is inconsistent to the size of indptr buffer");
       }

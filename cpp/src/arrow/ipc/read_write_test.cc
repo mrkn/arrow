@@ -56,6 +56,7 @@
 namespace arrow {
 
 using internal::checked_cast;
+using internal::GetByteWidth;
 
 namespace ipc {
 namespace test {
@@ -1459,9 +1460,7 @@ class TestTensorRoundTrip : public ::testing::Test, public IpcTestFixture {
   void CheckTensorRoundTrip(const Tensor& tensor) {
     int32_t metadata_length;
     int64_t body_length;
-
-    const auto& type = checked_cast<const FixedWidthType&>(*tensor.type());
-    const int elem_size = type.bit_width() / 8;
+    const int elem_size = GetByteWidth(*tensor.type());
 
     ASSERT_OK(mmap_->Seek(0));
 
@@ -1535,8 +1534,7 @@ class TestSparseTensorRoundTrip : public ::testing::Test, public IpcTestFixture 
   void TearDown() { IpcTestFixture::TearDown(); }
 
   void CheckSparseCOOTensorRoundTrip(const SparseCOOTensor& sparse_tensor) {
-    const auto& type = checked_cast<const FixedWidthType&>(*sparse_tensor.type());
-    const int elem_size = type.bit_width() / 8;
+    const int elem_size = GetByteWidth(*sparse_tensor.type());
     const int index_elem_size = sizeof(typename IndexValueType::c_type);
 
     int32_t metadata_length;
@@ -1576,8 +1574,7 @@ class TestSparseTensorRoundTrip : public ::testing::Test, public IpcTestFixture 
                       std::is_same<SparseIndexType, SparseCSCIndex>::value,
                   "SparseIndexType must be either SparseCSRIndex or SparseCSCIndex");
 
-    const auto& type = checked_cast<const FixedWidthType&>(*sparse_tensor.type());
-    const int elem_size = type.bit_width() / 8;
+    const int elem_size = GetByteWidth(*sparse_tensor.type());
     const int index_elem_size = sizeof(typename IndexValueType::c_type);
 
     int32_t metadata_length;
@@ -1618,8 +1615,7 @@ class TestSparseTensorRoundTrip : public ::testing::Test, public IpcTestFixture 
   }
 
   void CheckSparseCSFTensorRoundTrip(const SparseCSFTensor& sparse_tensor) {
-    const auto& type = checked_cast<const FixedWidthType&>(*sparse_tensor.type());
-    const int elem_size = type.bit_width() / 8;
+    const int elem_size = GetByteWidth(*sparse_tensor.type());
     const int index_elem_size = sizeof(typename IndexValueType::c_type);
 
     int32_t metadata_length;
