@@ -71,27 +71,37 @@ void ConvertRowMajorTensor(const Tensor& tensor, c_index_type* indices,
   }
 }
 
-// template <typename c_index_type, typename c_value_type>
-// void ConvertColumnMajorTensor(const Tensor& tensor, c_index_type* indices,
-// c_value_type* values) {
-//  const auto ndim = tensor.ndim();
-//  const auto& shape = tensor.shape();
-//  const c_value_type* tensor_data = reinterpret_cast<const
-//  c_value_type*>(tensor.raw_data());
-//
-//  std::vector<c_index_type> coord(ndim, 0);
-//  for (int64_t n = tensor.size(); n > 0; --n) {
-//    const c_value_type value = *tensor_data;
-//    if (value != 0) {
-//      std::copy(coord.begin(), coord.end(), indices);
-//      *values++ = value;
-//      indices += ndim;
-//    }
-//
-//    IncrementIndex(coord, shape);
-//    ++tensor_data;
-//  }
-//}
+template <typename c_index_type, typename c_value_type>
+void ConvertColumnMajorTensor(const Tensor& tensor, c_index_type* indices,
+                              c_value_type* values) {
+  const auto ndim = tensor.ndim();
+  const auto& shape = tensor.shape();
+  const auto& strides = tensor.strides();
+  const c_value_type* tensor_data = reinterpret_cast<const c_value_type*>(tensor.raw_data());
+  const c_value_type* p = tensor_data;
+
+  std::vector<c_index_type> coord(ndim, 0);
+  for (int64_t n = tensor.size(); n > 0; --n) {
+    const c_value_type value = *p;
+    if (value != 0) {
+      std::copy(coord.begin(), coord.end(), indices);
+      *values++ = value;
+      indices += ndim;
+    }
+
+    if (coord[ndim-1] == shape[ndim-1] - 1) {
+      int j = ndim - 2;
+      while (j > 0 && coord[j] == shape[j] - 1) --j;
+      if (j >= 0) {
+        p = tensor_data + strides[j];
+      }
+    } else {
+      p += strides[ndim-1];
+    }
+
+    IncrementIndex(coord, shape);
+  }
+}
 
 // ----------------------------------------------------------------------
 // SparseTensorConverter for SparseCOOIndex
@@ -208,6 +218,78 @@ class SparseCOOTensorConverter : private SparseTensorConverterMixin {
           break;
       }
 #undef CONVERT_ROW_MAJOR_TENSOR
+    } else if (tensor_.is_column_major()) {
+#define CONVERT_COLUMN_MAJOR_TENSOR(index_type, value_type)                                \
+  ConvertColumnMajorTensor<index_type, value_type>(tensor_,                                \
+                                                   reinterpret_cast<index_type*>(indices), \
+                                                   reinterpret_cast<value_type*>(values))
+      switch (index_elsize) {
+        case 1:
+          switch (value_elsize) {
+            case 1:
+              CONVERT_COLUMN_MAJOR_TENSOR(uint8_t, uint8_t);
+              break;
+            case 2:
+              CONVERT_COLUMN_MAJOR_TENSOR(uint8_t, uint16_t);
+              break;
+            case 4:
+              CONVERT_COLUMN_MAJOR_TENSOR(uint8_t, uint32_t);
+              break;
+            case 8:
+              CONVERT_COLUMN_MAJOR_TENSOR(uint8_t, uint64_t);
+              break;
+          }
+          break;
+        case 2:
+          switch (value_elsize) {
+            case 1:
+              CONVERT_COLUMN_MAJOR_TENSOR(uint16_t, uint8_t);
+              break;
+            case 2:
+              CONVERT_COLUMN_MAJOR_TENSOR(uint16_t, uint16_t);
+              break;
+            case 4:
+              CONVERT_COLUMN_MAJOR_TENSOR(uint16_t, uint32_t);
+              break;
+            case 8:
+              CONVERT_COLUMN_MAJOR_TENSOR(uint16_t, uint64_t);
+              break;
+          }
+          break;
+        case 4:
+          switch (value_elsize) {
+            case 1:
+              CONVERT_COLUMN_MAJOR_TENSOR(uint32_t, uint8_t);
+              break;
+            case 2:
+              CONVERT_COLUMN_MAJOR_TENSOR(uint32_t, uint16_t);
+              break;
+            case 4:
+              CONVERT_COLUMN_MAJOR_TENSOR(uint32_t, uint32_t);
+              break;
+            case 8:
+              CONVERT_COLUMN_MAJOR_TENSOR(uint32_t, uint64_t);
+              break;
+          }
+          break;
+        case 8:
+          switch (value_elsize) {
+            case 1:
+              CONVERT_COLUMN_MAJOR_TENSOR(int64_t, uint8_t);
+              break;
+            case 2:
+              CONVERT_COLUMN_MAJOR_TENSOR(int64_t, uint16_t);
+              break;
+            case 4:
+              CONVERT_COLUMN_MAJOR_TENSOR(int64_t, uint32_t);
+              break;
+            case 8:
+              CONVERT_COLUMN_MAJOR_TENSOR(int64_t, uint64_t);
+              break;
+          }
+          break;
+      }
+#undef CONVERT_COLUMN_MAJOR_TENSOR
     } else {
       const std::vector<int64_t>& shape = tensor_.shape();
       std::vector<int64_t> coord(ndim, 0);  // The current logical coordinates
